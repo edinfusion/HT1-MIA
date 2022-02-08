@@ -88,7 +88,7 @@ int main() {
                 cout << endl;
 
                 //FILE *file;
-                archivo = fopen("HT1.bin", "ab+");//ab+ sirve para agregar al final de archivo binario
+                archivo = fopen("HT1.bin", "rb+");//ab+ sirve para agregar al final de archivo binario
 
                 punteros indice;
                 siguente sig;
@@ -100,7 +100,8 @@ int main() {
                 if (indice.root_prof == -1) { //verifico si raiz profesor esta vacía
                     indice.root_prof = indice.now; // si esta vacia actualizo la direccion
                 } else {
-                    fseek(archivo, indice.end_prof, SEEK_SET);
+                    int pos = indice.end_prof;
+                    fseek(archivo, pos, SEEK_SET);
                     fread(&sig, sizeof(sig), 1, archivo);
 
                     cout <<"posicion sig " <<indice.end_prof << endl;
@@ -108,6 +109,8 @@ int main() {
                     sig.next = indice.now;//queda al inicio, aqui esta la direccion donde empieza el profesor
                     fwrite(&sig, sizeof(sig), 1, archivo);//guardo siguiente
                 }
+                fclose(archivo);
+                archivo = fopen("HT1.bin", "ab+");//ab+ sirve para agregar al final de archivo binario
                 fseek(archivo, indice.now, SEEK_SET);// movimiento de posicion de guardar struct profesor
                 sig.next = -1;
                 fwrite(&profe, sizeof(profe), 1, archivo);//ALMACENO STRUCT PROFESOR
@@ -234,6 +237,7 @@ int main() {
 
                     //verifico si hay siguientes para seguir imprimiendo
                     fseek(file,indice.root_prof+sizeof (profesreport),SEEK_SET);
+                    cout << "valor: " << indice.root_prof+sizeof (profesreport)<<endl;
                     fread(&sig, sizeof(sig),1,file);
                     while (sig.next != -1){
                         fseek(file,sig.next,SEEK_CUR);
