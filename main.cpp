@@ -102,6 +102,9 @@ int main() {
                 } else {
                     fseek(archivo, indice.end_prof, SEEK_SET);
                     fread(&sig, sizeof(sig), 1, archivo);
+
+                    cout <<"posicion sig " <<indice.end_prof << endl;
+
                     sig.next = indice.now;//queda al inicio, aqui esta la direccion donde empieza el profesor
                     fwrite(&sig, sizeof(sig), 1, archivo);//guardo siguiente
                 }
@@ -111,6 +114,7 @@ int main() {
                 fclose(archivo);
                 archivo = fopen("HT1.bin", "rb+");//para leer y actualizar rb+
                 fseek(archivo, indice.now + sizeof(profe), SEEK_SET);//mover puntero al final de struct profesor + now
+                cout <<"posicion sig " <<indice.now << " + "<< sizeof (profe) << endl;
                 fwrite(&sig, sizeof(sig), 1, archivo);//guardo siguiente -1 ya que no hay siguiente aun es el ultimo
                 indice.end_prof = indice.now + sizeof(profe);
                 fseek(archivo, 0, SEEK_SET);
@@ -151,15 +155,51 @@ int main() {
                 scanf("%s", &estu.carnet);
                 cout << endl;
 
-                FILE *file;
-                file = fopen("HT1.bin", "ab");
-                if (file == NULL) {
-                    cout << "ARCHIVO INACCESIBLE";
+                archivo = fopen("HT1.bin", "ab+");//ab+ sirve para agregar al final de archivo binario
+
+                punteros indice;
+                siguente sig;
+                //muevo PUNTERO al inicio de archivo
+                fseek(archivo, 0, SEEK_SET);
+
+                //consigo direccion de punteros
+                fread(&indice, sizeof(indice), 1, archivo);
+
+                //
+                if (indice.root_alum == -1) { //verifico si raiz profesor esta vacía
+                    indice.root_alum = indice.now; // si esta vacia actualizo la direccion
                 } else {
-                    fwrite(&estu, sizeof(estu), 1, file);
-                    fclose(file);
-                    cout << "SE HA REGISTRADO UN NUEVO ALUMNO CON EXITO" << endl;
+                    fseek(archivo, indice.end_alum, SEEK_SET);
+                    fread(&sig, sizeof(sig), 1, archivo);
+                    sig.next = indice.now;//queda al inicio, aqui esta la direccion donde empieza el profesor
+                    fwrite(&sig, sizeof(sig), 1, archivo);//guardo siguiente
                 }
+                fseek(archivo, indice.now, SEEK_SET);// movimiento de posicion de guardar struct estudiante
+                sig.next = -1;
+                fwrite(&estu, sizeof(estu), 1, archivo);//ALMACENO STRUCT PROFESOR
+                fclose(archivo);
+                archivo = fopen("HT1.bin", "rb+");//para leer y actualizar rb+
+                fseek(archivo, indice.now + sizeof(estu), SEEK_SET);//mover puntero al final de struct profesor + now
+
+                fwrite(&sig, sizeof(sig), 1, archivo);//guardo siguiente -1 ya que no hay siguiente aun es el ultimo
+                indice.end_prof = indice.now + sizeof(estu);
+                fseek(archivo, 0, SEEK_SET);
+                indice.now = sizeof(estu) + sizeof(sig) + indice.now;
+                fwrite(&indice, sizeof(indice), 1, archivo);
+
+
+                /*fseek(archivo, 92, SEEK_SET);
+                Profesor pfs;
+                fread(&pfs, sizeof(pfs), 1, archivo);
+                cout << pfs.nombre << endl;
+                cout << pfs.cui << endl;
+                cout << pfs.curso << endl;
+                cout << pfs.id_profesor << endl;*/
+
+                fclose(archivo);
+
+                cout << "SE HA REGISTRADO UN NUEVO ESTUDIANTE CON EXITO" << endl;
+                //}
                 opmenu = 0;
             }
                 break;
@@ -167,25 +207,44 @@ int main() {
                 system("clear");
                 FILE *file;
                 Profesor profesreport;
+                punteros indice;
+                siguente sig;
                 file = fopen("HT1.bin", "rb");
                 if (file == NULL) {
                     cout << "NO SE PUEDE ACCEDER AL ARCHIVO";
                 } else {
                     system("clear");
-                    fread(&profesreport, sizeof(profesreport), 1, file);
-                    cout << "****** REGISTROS ******" << endl;
-                    while (!feof(file)) {
+
+                    //muevo puntero al inicio de archivo
+                    fseek(file, 0, SEEK_SET);
+
+                    //leo de archivo el struct de indices
+                    fread(&indice,sizeof (indice),1,file);
+
+                    //MUEVO EL PUNTERO HASTA EL PRIMER REGISTRO PROFESOR
+                    fseek(file,indice.root_prof,SEEK_SET);
+
+                    //IMPRESIÓN DE PRIMER PROFESOR
+                    fread(&profesreport,sizeof (profesreport),1,file);
+                    cout << "****** PROFESOR ******" << endl;
+                    cout << "ID: " << profesreport.id_profesor << endl;
+                    cout << "CUI: " << profesreport.cui << endl;
+                    cout << "NOMBRE: " << profesreport.nombre << endl;
+                    cout << "CURSO: " << profesreport.curso << endl;
+
+                    //verifico si hay siguientes para seguir imprimiendo
+                    fseek(file,indice.root_prof+sizeof (profesreport),SEEK_SET);
+                    fread(&sig, sizeof(sig),1,file);
+                    while (sig.next != -1){
+                        fseek(file,sig.next,SEEK_CUR);
+                        fread(&profesreport,sizeof (profesreport),1,file);
                         cout << "****** PROFESOR ******" << endl;
                         cout << "ID: " << profesreport.id_profesor << endl;
                         cout << "CUI: " << profesreport.cui << endl;
                         cout << "NOMBRE: " << profesreport.nombre << endl;
                         cout << "CURSO: " << profesreport.curso << endl;
-
-                        cout << "****** ESTUDIANTE ******" << endl;
-
-
-                        cout << " - - - - - - - - - - - - - - - - - - - - " << endl;
-                        fread(&profesreport, sizeof(profesreport), 1, file);
+                        fseek(file,sizeof (profesreport),SEEK_SET);
+                        fread(&sig, sizeof(sig),1,file);
                     }
                     fclose(file);
                 }
